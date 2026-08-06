@@ -1,2 +1,0 @@
-- [ ] parent task
-    - child list item

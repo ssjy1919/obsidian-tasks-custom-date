@@ -1,3 +1,0 @@
-- [ ] #task parent
-    - [ ] #task child 1
-    - [ ] #task child 2

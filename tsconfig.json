@@ -1,60 +1,15 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "baseUrl": "./src",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "inlineSources": true,
-    "sourceMap": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "baseUrl": ".",
+    "target": "ES2020",
     "module": "ESNext",
-    "target": "es6",
-    "allowJs": true,
-    "noImplicitAny": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "ignoreDeprecations": "5.0",
-    "outDir": "generated",
-    "paths": {
-      "src": [
-        "src/*",
-        "tests/*"
-      ]
-    },
-    "types": [
-      "jest",
-      "node",
-      "svelte"
-    ],
-    "lib": [
-      "dom",
-      "es5",
-      "scripthost",
-      "es2015"
-    ]
+    "moduleResolution": "Node",
+    "lib": ["DOM", "ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node", "jest"]
   },
-  "include": [
-    "src/**/*",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "node_modules/*"
-  ],
-  "typedocOptions": {
-    "name": "Tasks plugin",
-    "readme": "src/README-code-docs.md",
-    "excludePrivate": false,
-    "excludeProtected": false,
-    "excludeReferences": true,
-    "out": "code-docs",
-    "gitRevision": "main",
-    "plugin": [
-      "typedoc-plugin-mdn-links",
-      "typedoc-umlclass"
-    ],
-    "sourceLinkExternal": false
-  }
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

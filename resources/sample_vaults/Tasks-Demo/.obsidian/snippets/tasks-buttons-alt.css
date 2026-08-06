@@ -1,7 +1,0 @@
-.tasks-edit::after {
-    content: '\1f589';
-}
-
-.tasks-postpone::after {
-    content: '\2bee';
-}

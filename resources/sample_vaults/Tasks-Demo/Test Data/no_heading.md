@@ -1,1 +1,0 @@
-- [ ] #task Task in 'no_heading'

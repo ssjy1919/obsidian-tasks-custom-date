@@ -1,4 +1,0 @@
-- [ ] parent task
-    - [ ] child task 1
-    - child list item 1
-    - [ ] child task 2

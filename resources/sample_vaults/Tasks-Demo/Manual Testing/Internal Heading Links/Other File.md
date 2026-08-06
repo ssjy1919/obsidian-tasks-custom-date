@@ -1,3 +1,0 @@
-# Other File
-
-## Some Header

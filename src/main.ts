@@ -1,144 +1,92 @@
-import { Plugin } from 'obsidian';
-
-import type { Task } from 'Task/Task';
+import { Plugin, type Editor } from 'obsidian';
+import { CreatedDateSuggest } from './createdDateSuggest';
+import { CreateOrEditTaskModal } from './createOrEditModal';
 import { i18n, initializeI18n } from './i18n/i18n';
-import { Cache, State } from './Obsidian/Cache';
-import { Commands } from './Commands';
-import { GlobalQuery } from './Config/GlobalQuery';
-import { TasksEvents } from './Obsidian/TasksEvents';
-import { initializeFile } from './Obsidian/File';
-import { InlineRenderer } from './Obsidian/InlineRenderer';
-import { newLivePreviewExtension } from './Obsidian/LivePreviewExtension';
-import { QueryRenderer } from './Renderer/QueryRenderer';
-import { getSettings, updateSettings } from './Config/Settings';
-import { SettingsTab } from './Config/SettingsTab';
-import { StatusRegistry } from './Statuses/StatusRegistry';
-import { log, logging } from './lib/logging';
-import { EditorSuggestor } from './Suggestor/EditorSuggestorPopup';
-import { StatusSettings } from './Config/StatusSettings';
-import { tasksApiV1 } from './Api';
-import { GlobalFilter } from './Config/GlobalFilter';
-import { QueryFileDefaults } from './Query/QueryFileDefaults';
+import { newLivePreviewExtension } from './livePreviewExtension';
+import { ReadingModeHandler } from './readingModeHandler';
+import { DEFAULT_SETTINGS, getSettings, getTimeFormat, updateSettings } from './settings';
+import { TasksCustomDateSettingTab } from './settingsTab';
+import {
+    createTaskLine,
+    formatTimestamp,
+    makeField,
+    parseTaskLine,
+    stripListPrefix,
+    toggleTaskLine,
+} from './taskLine';
 
-export default class TasksPlugin extends Plugin {
-    private cache: Cache | undefined;
-    public inlineRenderer: InlineRenderer | undefined;
-    public queryRenderer: QueryRenderer | undefined;
+export default class TasksCustomDatePlugin extends Plugin {
+    private readingModeHandler: ReadingModeHandler | undefined;
 
-    get apiV1() {
-        return tasksApiV1(this.app);
-    }
-
-    async onload() {
+    public async onload(): Promise<void> {
         await initializeI18n();
-
-        logging.registerConsoleLogger();
-        log('info', i18n.t('main.loadingPlugin', { name: this.manifest.name, version: this.manifest.version }));
+        console.log(i18n.t('main.loadingPlugin', { name: this.manifest.name, version: this.manifest.version }));
 
         await this.loadSettings();
 
-        // Configure logging.
-        const { loggingOptions } = getSettings();
-        logging.configure(loggingOptions);
+        this.addSettingTab(new TasksCustomDateSettingTab(this.app, this));
+        this.registerEditorSuggest(new CreatedDateSuggest(this.app));
 
-        this.addSettingTab(new SettingsTab({ plugin: this }));
-
-        initializeFile({
-            metadataCache: this.app.metadataCache,
-            vault: this.app.vault,
-            workspace: this.app.workspace,
+        this.addCommand({
+            id: 'edit-task',
+            name: i18n.t('commands.editTask'),
+            icon: 'pencil',
+            editorCallback: (editor: Editor) => {
+                const lineNumber = editor.getCursor().line;
+                new CreateOrEditTaskModal(this.app, editor, lineNumber, editor.getLine(lineNumber)).open();
+            },
         });
 
-        // Load configured status types.
-        await this.loadTaskStatuses();
-
-        const events = new TasksEvents({ obsidianEvents: this.app.workspace });
-        this.cache = new Cache({
-            metadataCache: this.app.metadataCache,
-            vault: this.app.vault,
-            workspace: this.app.workspace,
-            events,
+        this.addCommand({
+            id: 'toggle-done',
+            name: i18n.t('commands.toggleDone'),
+            icon: 'check-in-circle',
+            editorCallback: (editor: Editor) => {
+                const lineNumber = editor.getCursor().line;
+                const line = editor.getLine(lineNumber);
+                const settings = getSettings();
+                const parsed = parseTaskLine(line, getTimeFormat(settings));
+                const replacement =
+                    parsed !== null
+                        ? toggleTaskLine(line, settings)
+                        : createTaskLine(line, stripListPrefix(line), ' ', settings);
+                if (replacement !== null && replacement !== line) {
+                    editor.setLine(lineNumber, replacement);
+                }
+            },
         });
 
-        this.inlineRenderer = new InlineRenderer({ plugin: this });
-        this.queryRenderer = new QueryRenderer({ plugin: this, events });
-
-        // Update types.json.
-        this.setObsidianPropertiesTypes();
+        this.addCommand({
+            id: 'insert-created-date',
+            name: i18n.t('commands.insertCreatedDate'),
+            icon: 'plus',
+            editorCallback: (editor: Editor) => {
+                const lineNumber = editor.getCursor().line;
+                const lineText = editor.getLine(lineNumber);
+                const settings = getSettings();
+                const parsed = parseTaskLine(lineText, getTimeFormat(settings));
+                if (parsed === null || parsed.created !== undefined) {
+                    return;
+                }
+                const format = parsed.fieldFormat ?? settings.taskFormat;
+                const field = makeField('created', formatTimestamp(settings), format);
+                editor.replaceRange(field, { line: lineNumber, ch: lineText.length });
+                editor.setCursor({ line: lineNumber, ch: lineText.length + field.length });
+            },
+        });
 
         this.registerEditorExtension(newLivePreviewExtension());
-        this.registerEditorSuggest(new EditorSuggestor(this.app, getSettings(), this));
-        new Commands({ plugin: this });
+        this.readingModeHandler = new ReadingModeHandler(this);
     }
 
-    async loadTaskStatuses() {
-        const { statusSettings } = getSettings();
-        StatusSettings.applyToStatusRegistry(statusSettings, StatusRegistry.getInstance());
+    public onunload(): void {}
+
+    public async loadSettings(): Promise<void> {
+        const data = await this.loadData();
+        updateSettings({ ...DEFAULT_SETTINGS, ...(data ?? {}) });
     }
 
-    onunload() {
-        log('info', i18n.t('main.unloadingPlugin', { name: this.manifest.name, version: this.manifest.version }));
-        this.cache?.unload();
-    }
-
-    async loadSettings() {
-        let newSettings = await this.loadData();
-        updateSettings(newSettings);
-
-        // Fetch the updated settings, in case the user has not yet edited the settings,
-        // in which case newSettings is currently empty.
-        newSettings = getSettings();
-        GlobalFilter.getInstance().set(newSettings.globalFilter);
-        GlobalFilter.getInstance().setRemoveGlobalFilter(newSettings.removeGlobalFilter);
-        GlobalQuery.getInstance().set(newSettings.globalQuery);
-
-        await this.loadTaskStatuses();
-    }
-
-    async saveSettings() {
+    public async saveSettings(): Promise<void> {
         await this.saveData(getSettings());
-    }
-
-    public getTasks(): Task[] {
-        if (this.cache === undefined) {
-            return [] as Task[];
-        } else {
-            return this.cache.getTasks();
-        }
-    }
-
-    public getState(): State {
-        if (this.cache === undefined) {
-            return State.Cold;
-        }
-        return this.cache.getState();
-    }
-
-    /**
-     * Add {@link QueryFileDefaults} properties to the Obsidian vault's types.json file,
-     * so that they are available via auto-complete in the File Properties panel.
-     */
-    private setObsidianPropertiesTypes() {
-        // Credit: this code based on ideas...
-        // by:
-        //      @SkepticMystic
-        // in:
-        //      https://github.com/SkepticMystic/breadcrumbs/blob/d380407678ce64f5668550d270b1035bc1a767f8/src/main.ts#L47-L64
-        try {
-            // @ts-expect-error TS2339: Property metadataTypeManager does not exist on type App
-            const metadataTypeManager = this.app.metadataTypeManager;
-            const all_properties = metadataTypeManager.getAllProperties();
-
-            const defaults = new QueryFileDefaults();
-            for (const field of defaults.allPropertyNamesSorted()) {
-                const property_type = defaults.propertyType(field);
-                if (all_properties[field]?.type === property_type) {
-                    continue;
-                }
-                metadataTypeManager.setType(field, property_type);
-            }
-        } catch (error) {
-            console.error('setObsidianPropertiesTypes error', error);
-        }
     }
 }

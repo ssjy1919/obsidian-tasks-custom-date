@@ -1,3 +1,0 @@
-- [ ] parent task
-    - child list item
-        - [ ] grandchild task
