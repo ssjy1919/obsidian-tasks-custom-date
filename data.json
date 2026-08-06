@@ -1,9 +1,0 @@
-{
-  "setCreatedDate": true,
-  "setDoneDate": true,
-  "setCancelledDate": true,
-  "taskFormat": "dataview",
-  "suggestTrigger": " ",
-  "timeFormat": "iso",
-  "customTimeFormat": "YYYY-MM-DDTHH:mm:ssZ"
-}
