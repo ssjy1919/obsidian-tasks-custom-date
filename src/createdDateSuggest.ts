@@ -79,5 +79,6 @@ export class CreatedDateSuggest extends EditorSuggest<CreatedDateSuggestionValue
             { line: cursor.line, ch: value.replaceTo },
         );
         editor.setCursor({ line: cursor.line, ch: value.replaceFrom + value.appendText.length });
+        this.close();
     }
 }
