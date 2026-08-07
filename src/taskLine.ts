@@ -1,5 +1,16 @@
 import type { Moment } from 'moment';
-import { getTimeFormat, type Settings } from './settings';
+import { getTimeFormat, type Settings, type TaskStateConfig } from './settings';
+import {
+    DONE_STATE,
+    TODO_STATE,
+    formatFieldNow,
+    formatFieldWithValue,
+    getStateBySymbol,
+    getStateSequence,
+    nextStatusSymbol,
+    removeFieldFromBody,
+    shouldIntercept,
+} from './stateEngine';
 
 export interface TimestampField {
     value: string;
@@ -25,13 +36,6 @@ export interface EditedTaskLineInput {
 
 const TASK_LINE_REGEX = /^([ \t>]*)([-*+]|[0-9]+[.)]) +\[(.)\] *(.*)$/u;
 const LIST_ITEM_REGEX = /^([ \t>]*)([-*+]|[0-9]+[.)]) +(.+)$/u;
-
-const NEXT_STATUS: Record<string, string> = {
-    ' ': 'x',
-    x: ' ',
-    '/': 'x',
-    '-': ' ',
-};
 
 const PRESET_TIMESTAMP_PATTERNS: RegExp[] = [
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z)?$/,
@@ -216,6 +220,84 @@ function buildLine(
     return `${parsed.indentation}${parsed.listMarker} [${statusSymbol}] ${description}${fieldTexts.join('')}`;
 }
 
+export function normalizeTaskLine(
+    line: string,
+    settings: Settings,
+    now: Moment = nowMoment(),
+): string | null {
+    if (!shouldIntercept(line, settings)) {
+        return line;
+    }
+    const parsed = parseTaskLine(line, getTimeFormat(settings));
+    if (parsed === null) {
+        return null;
+    }
+
+    const sequence = getStateSequence(settings);
+    const todoState = sequence.find((state) => state.id === TODO_STATE.id) ?? TODO_STATE;
+    const doneState = sequence.find((state) => state.id === DONE_STATE.id) ?? DONE_STATE;
+    let description = parsed.description;
+    const rawFields: Array<{ state: TaskStateConfig; raw: string }> = [];
+
+    for (let i = 0; i < sequence.length * 3; i++) {
+        let removedAny = false;
+        for (const state of sequence) {
+            const removed = removeFieldFromBody(description, state.format);
+            if (removed.raw !== null) {
+                rawFields.push({ state, raw: removed.raw });
+                description = removed.body;
+                removedAny = true;
+            }
+        }
+        if (!removedAny) {
+            break;
+        }
+    }
+
+    if (parsed.created !== undefined && !rawFields.some((r) => r.state.id === todoState.id)) {
+        rawFields.push({ state: todoState, raw: formatFieldWithValue(todoState.format, parsed.created.value) });
+    }
+    if (parsed.done !== undefined && !rawFields.some((r) => r.state.id === doneState.id)) {
+        rawFields.push({ state: doneState, raw: formatFieldWithValue(doneState.format, parsed.done.value) });
+    }
+    if (parsed.cancelled !== undefined) {
+        const cancelledState = sequence.find((state) => state.symbol === '-');
+        if (
+            cancelledState !== undefined &&
+            !rawFields.some((r) => r.state.id === cancelledState.id)
+        ) {
+            rawFields.push({
+                state: cancelledState,
+                raw: formatFieldWithValue(cancelledState.format, parsed.cancelled.value),
+            });
+        }
+    }
+
+    const fields: string[] = [];
+    const todoRaw = rawFields.find((r) => r.state.id === todoState.id);
+    if (todoRaw !== undefined) {
+        fields.push(todoRaw.raw);
+    } else if (parsed.statusSymbol === todoState.symbol || settings.alwaysWriteCreated) {
+        fields.push(formatFieldNow(todoState.format, now, settings));
+    }
+
+    for (const state of sequence) {
+        if (state.symbol === TODO_STATE.symbol) {
+            continue;
+        }
+        if (state.symbol !== parsed.statusSymbol) {
+            continue;
+        }
+        const existing = rawFields.find((r) => r.state.id === state.id);
+        fields.push(
+            existing !== undefined ? existing.raw : formatFieldNow(state.format, now, settings),
+        );
+    }
+
+    const fieldText = fields.map((f) => (f.startsWith(' ') ? f : ` ${f}`)).join('');
+    return `${parsed.indentation}${parsed.listMarker} [${parsed.statusSymbol}] ${description}${fieldText}`;
+}
+
 export function toggleTaskLine(
     line: string,
     settings: Settings,
@@ -225,23 +307,15 @@ export function toggleTaskLine(
     if (parsed === null) {
         return null;
     }
-    const nextStatus = NEXT_STATUS[parsed.statusSymbol];
-    if (nextStatus === undefined) {
+    const nextStatus = nextStatusSymbol(parsed.statusSymbol, line, settings);
+    if (nextStatus === null) {
         return null;
     }
-
-    const format = effectiveFieldFormat(parsed, settings);
-    const fields: string[] = [];
-    if (parsed.created !== undefined) {
-        fields.push(makeField('created', parsed.created.value, format));
+    const statusChangedLine = line.replace(TASK_LINE_REGEX, `$1$2 [${nextStatus}] $4`);
+    if (!shouldIntercept(line, settings)) {
+        return statusChangedLine;
     }
-    if (nextStatus === 'x' && settings.setDoneDate) {
-        fields.push(makeField('done', formatTimestamp(settings, now), format));
-    }
-    if (nextStatus === '-' && settings.setCancelledDate) {
-        fields.push(makeField('cancelled', formatTimestamp(settings, now), format));
-    }
-    return buildLine(parsed, nextStatus, parsed.description, fields);
+    return normalizeTaskLine(statusChangedLine, settings, now) ?? statusChangedLine;
 }
 
 export function enrichToggledLine(
@@ -249,68 +323,35 @@ export function enrichToggledLine(
     settings: Settings,
     now: Moment = nowMoment(),
 ): string {
-    const parsed = parseTaskLine(line, getTimeFormat(settings));
-    if (parsed === null) {
+    if (!shouldIntercept(line, settings)) {
         return line;
     }
-
-    const format = effectiveFieldFormat(parsed, settings);
-    const fields: string[] = [];
-
-    if (parsed.created !== undefined) {
-        fields.push(makeField('created', parsed.created.value, format));
-    }
-    if (parsed.statusSymbol === 'x') {
-        const doneValue =
-            parsed.done?.value ??
-            (settings.setDoneDate ? formatTimestamp(settings, now) : undefined);
-        if (doneValue !== undefined) {
-            fields.push(makeField('done', doneValue, format));
-        }
-    }
-    if (parsed.statusSymbol === '-') {
-        const cancelledValue =
-            parsed.cancelled?.value ??
-            (settings.setCancelledDate ? formatTimestamp(settings, now) : undefined);
-        if (cancelledValue !== undefined) {
-            fields.push(makeField('cancelled', cancelledValue, format));
-        }
-    }
-
-    return buildLine(parsed, parsed.statusSymbol, parsed.description, fields);
+    return normalizeTaskLine(line, settings, now) ?? line;
 }
 
 export function buildEditedLine(parsed: ParsedTaskLine, input: EditedTaskLineInput): string {
     const now = input.now ?? nowMoment();
-    const format = effectiveFieldFormat(parsed, input.settings);
+    const todoState = getStateBySymbol(input.settings, TODO_STATE.symbol) ?? TODO_STATE;
+    const doneState = getStateBySymbol(input.settings, DONE_STATE.symbol) ?? DONE_STATE;
     const fields: string[] = [];
-
-    const createdValue =
-        parsed.created?.value ??
-        (input.settings.setCreatedDate ? formatTimestamp(input.settings, now) : undefined);
-    if (createdValue !== undefined) {
-        fields.push(makeField('created', createdValue, format));
+    if (parsed.created !== undefined) {
+        fields.push(formatFieldWithValue(todoState.format, parsed.created.value));
     }
-
-    if (input.statusSymbol === 'x') {
-        const doneValue =
-            parsed.done?.value ??
-            (input.settings.setDoneDate ? formatTimestamp(input.settings, now) : undefined);
-        if (doneValue !== undefined) {
-            fields.push(makeField('done', doneValue, format));
+    if (parsed.done !== undefined) {
+        fields.push(formatFieldWithValue(doneState.format, parsed.done.value));
+    }
+    if (parsed.cancelled !== undefined) {
+        const cancelledState = getStateBySymbol(input.settings, '-');
+        if (cancelledState !== undefined) {
+            fields.push(formatFieldWithValue(cancelledState.format, parsed.cancelled.value));
         }
     }
-
-    if (input.statusSymbol === '-') {
-        const cancelledValue =
-            parsed.cancelled?.value ??
-            (input.settings.setCancelledDate ? formatTimestamp(input.settings, now) : undefined);
-        if (cancelledValue !== undefined) {
-            fields.push(makeField('cancelled', cancelledValue, format));
-        }
+    const tail = fields.map((f) => (f.startsWith(' ') ? f : ` ${f}`)).join('');
+    const line = `${parsed.indentation}${parsed.listMarker} [${input.statusSymbol}] ${input.description.trim()}${tail}`;
+    if (!shouldIntercept(line, input.settings)) {
+        return line;
     }
-
-    return buildLine(parsed, input.statusSymbol, input.description.trim(), fields);
+    return normalizeTaskLine(line, input.settings, now) ?? line;
 }
 
 export function createTaskLine(
@@ -323,17 +364,19 @@ export function createTaskLine(
     const listMatch = originalLine.match(LIST_ITEM_REGEX);
     const indentation = listMatch === null ? '' : listMatch[1];
     const marker = listMatch === null ? '-' : listMatch[2];
+    const todoState = getStateBySymbol(settings, TODO_STATE.symbol) ?? TODO_STATE;
     const fields: string[] = [];
 
-    if (settings.setCreatedDate) {
-        fields.push(makeField('created', formatTimestamp(settings, now), settings.taskFormat));
-    }
-    if (statusSymbol === 'x' && settings.setDoneDate) {
-        fields.push(makeField('done', formatTimestamp(settings, now), settings.taskFormat));
-    }
-    if (statusSymbol === '-' && settings.setCancelledDate) {
-        fields.push(makeField('cancelled', formatTimestamp(settings, now), settings.taskFormat));
+    if (shouldIntercept(originalLine, settings)) {
+        if (statusSymbol === todoState.symbol) {
+            fields.push(formatFieldNow(todoState.format, now, settings));
+        }
+        const state = getStateBySymbol(settings, statusSymbol);
+        if (state !== undefined && state.symbol !== TODO_STATE.symbol) {
+            fields.push(formatFieldNow(state.format, now, settings));
+        }
     }
 
-    return `${indentation}${marker} [${statusSymbol}] ${description.trim()}${fields.join('')}`;
+    const fieldText = fields.map((f) => (f.startsWith(' ') ? f : ` ${f}`)).join('');
+    return `${indentation}${marker} [${statusSymbol}] ${description.trim()}${fieldText}`;
 }

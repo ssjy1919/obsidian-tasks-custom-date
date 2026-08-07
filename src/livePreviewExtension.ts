@@ -1,6 +1,7 @@
 import { EditorView, ViewPlugin, type PluginValue } from '@codemirror/view';
-import { getSettings } from './settings';
-import { enrichToggledLine } from './taskLine';
+import { getSettings, getTimeFormat } from './settings';
+import { enrichToggledLine, parseTaskLine, toggleTaskLine } from './taskLine';
+import { getStateBySymbol, shouldCycle, shouldIntercept } from './stateEngine';
 
 class LivePreviewExtension implements PluginValue {
     private readonly view: EditorView;
@@ -8,11 +9,11 @@ class LivePreviewExtension implements PluginValue {
     constructor(view: EditorView) {
         this.view = view;
         this.handleClickEvent = this.handleClickEvent.bind(this);
-        this.view.dom.addEventListener('click', this.handleClickEvent);
+        this.view.dom.addEventListener('click', this.handleClickEvent, true);
     }
 
     public destroy(): void {
-        this.view.dom.removeEventListener('click', this.handleClickEvent);
+        this.view.dom.removeEventListener('click', this.handleClickEvent, true);
     }
 
     private handleClickEvent(event: MouseEvent): void {
@@ -35,6 +36,31 @@ class LivePreviewExtension implements PluginValue {
             return;
         }
         if (originalFrom === null || originalText === null) {
+            return;
+        }
+
+        const settings = getSettings();
+        const parsed = parseTaskLine(originalText, getTimeFormat(settings));
+        const unknownState =
+            parsed !== null && getStateBySymbol(settings, parsed.statusSymbol) === undefined;
+        if (shouldCycle(originalText, settings) || (shouldIntercept(originalText, settings) && unknownState)) {
+            event.preventDefault();
+            const toggled = toggleTaskLine(originalText, settings);
+            if (toggled !== null && toggled !== originalText) {
+                const transaction = this.view.state.update({
+                    changes: {
+                        from: originalFrom,
+                        to: originalFrom + originalText.length,
+                        insert: toggled,
+                    },
+                });
+                this.view.dispatch(transaction);
+                const match = toggled.match(/\[(.)\]/u);
+                const checked = match !== null && match[1] !== ' ';
+                setTimeout(() => {
+                    target.checked = checked;
+                }, 1);
+            }
             return;
         }
 

@@ -5,7 +5,7 @@ import { buildCreatedDateSuggestions } from '../src/suggestion';
 (window as any).moment = moment;
 
 function settings(overrides: Partial<Settings> = {}): Settings {
-    return { ...DEFAULT_SETTINGS, taskFormat: 'dataview', ...overrides };
+    return { ...DEFAULT_SETTINGS, taskFormat: 'dataview', interceptTrigger: '', ...overrides };
 }
 
 describe('buildCreatedDateSuggestions', () => {

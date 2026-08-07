@@ -1,5 +1,13 @@
 import { getTimeFormat, type Settings } from './settings';
-import { formatTimestamp, makeField, parseTaskLine } from './taskLine';
+import { parseTaskLine } from './taskLine';
+import {
+    TODO_STATE,
+    formatFieldNow,
+    getStateBySymbol,
+    hasTimePlaceholder,
+    shouldIntercept,
+    splitTemplate,
+} from './stateEngine';
 
 export type CreatedDateSuggestionKind = 'created' | 'empty';
 
@@ -22,6 +30,9 @@ export function buildCreatedDateSuggestions(
     if (parsed === null || parsed.created !== undefined) {
         return [];
     }
+    if (!shouldIntercept(line, settings)) {
+        return [];
+    }
 
     const prefix = `${parsed.indentation}${parsed.listMarker} [${parsed.statusSymbol}] `;
     if (cursorCh < prefix.length) {
@@ -34,8 +45,14 @@ export function buildCreatedDateSuggestions(
         return [];
     }
 
-    const valueText = formatTimestamp(settings);
-    const field = makeField('created', valueText, settings.taskFormat);
+    const now = (window as any).moment();
+    const todoState = getStateBySymbol(settings, TODO_STATE.symbol) ?? TODO_STATE;
+    if (!hasTimePlaceholder(todoState.format)) {
+        return [];
+    }
+    const { format } = splitTemplate(todoState.format);
+    const valueText = format.length > 0 ? now.format(format) : now.format(getTimeFormat(settings));
+    const field = formatFieldNow(todoState.format, now, settings);
     const appendText = trigger === ' ' ? field.trimStart() : ` ${field.trimStart()}`;
     const createdSuggestion: CreatedDateSuggestionData = {
         kind: 'created',

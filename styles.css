@@ -1,3 +1,24 @@
 .task-custom-date-modal .setting-item {
   margin-bottom: 12px;
 }
+
+.row-for-status {
+  margin: 0 0 4px 0;
+  padding: 4px 8px;
+  font-family: var(--font-monospace);
+  background: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.tasks-state-transition {
+  white-space: pre;
+}
+
+.tasks-time-format-preview {
+  margin: 6px 0 0 0;
+  padding: 4px 8px;
+  font-family: var(--font-monospace);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-radius: 4px;
+}

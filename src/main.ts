@@ -6,14 +6,8 @@ import { newLivePreviewExtension } from './livePreviewExtension';
 import { ReadingModeHandler } from './readingModeHandler';
 import { DEFAULT_SETTINGS, getSettings, getTimeFormat, updateSettings } from './settings';
 import { TasksCustomDateSettingTab } from './settingsTab';
-import {
-    createTaskLine,
-    formatTimestamp,
-    makeField,
-    parseTaskLine,
-    stripListPrefix,
-    toggleTaskLine,
-} from './taskLine';
+import { createTaskLine, parseTaskLine, stripListPrefix, toggleTaskLine } from './taskLine';
+import { TODO_STATE, formatFieldNow, hasTimePlaceholder, shouldIntercept } from './stateEngine';
 
 export default class TasksCustomDatePlugin extends Plugin {
     private readingModeHandler: ReadingModeHandler | undefined;
@@ -68,8 +62,13 @@ export default class TasksCustomDatePlugin extends Plugin {
                 if (parsed === null || parsed.created !== undefined) {
                     return;
                 }
-                const format = parsed.fieldFormat ?? settings.taskFormat;
-                const field = makeField('created', formatTimestamp(settings), format);
+                if (!shouldIntercept(lineText, settings)) {
+                    return;
+                }
+                if (!hasTimePlaceholder(TODO_STATE.format)) {
+                    return;
+                }
+                const field = formatFieldNow(TODO_STATE.format, (window as any).moment(), settings);
                 editor.replaceRange(field, { line: lineNumber, ch: lineText.length });
                 editor.setCursor({ line: lineNumber, ch: lineText.length + field.length });
             },

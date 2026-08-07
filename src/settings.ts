@@ -1,12 +1,30 @@
 export type TaskFieldFormat = 'dataview' | 'emoji';
 export type TimeFormatPreset = 'iso' | 'dateTimeSpace' | 'dateOnly' | 'custom';
+export type TransitionScope = 'none' | 'all' | 'tag';
+
+export interface TaskStateConfig {
+    id: string;
+    name: string;
+    symbol: string;
+    format: string;
+    autoWrite: boolean;
+}
 
 export interface Settings {
     setCreatedDate: boolean;
     setDoneDate: boolean;
     setCancelledDate: boolean;
+    alwaysWriteCreated: boolean;
     taskFormat: TaskFieldFormat;
     suggestTrigger: string;
+    interceptTrigger: string;
+    transitionScope: TransitionScope;
+    transitionTrigger: string;
+    customStates: TaskStateConfig[];
+    todoFormat: string;
+    todoAutoWrite: boolean;
+    doneFormat: string;
+    doneAutoWrite: boolean;
     timeFormat: TimeFormatPreset;
     customTimeFormat: string;
 }
@@ -21,8 +39,32 @@ export const DEFAULT_SETTINGS: Settings = {
     setCreatedDate: true,
     setDoneDate: true,
     setCancelledDate: true,
+    alwaysWriteCreated: false,
     taskFormat: 'dataview',
     suggestTrigger: ' ',
+    interceptTrigger: '#custom',
+    transitionScope: 'tag',
+    transitionTrigger: '#custom',
+    customStates: [
+        {
+            id: 'in-progress',
+            name: 'In Progress',
+            symbol: '/',
+            format: ' [in_progress:: {{time}}]',
+            autoWrite: true,
+        },
+        {
+            id: 'cancelled',
+            name: 'Cancelled',
+            symbol: '-',
+            format: ' [cancelled:: {{time}}]',
+            autoWrite: true,
+        },
+    ],
+    todoFormat: ' [created:: {{time}}]',
+    todoAutoWrite: true,
+    doneFormat: ' [completion:: {{time}}]',
+    doneAutoWrite: true,
     timeFormat: 'iso',
     customTimeFormat: TIME_FORMAT_PRESETS.iso,
 };

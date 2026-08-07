@@ -13,29 +13,26 @@ import { DEFAULT_SETTINGS, type Settings } from '../src/settings';
 
 const NOW = moment('2026-08-07T10:30:00+08:00');
 const ISO_FORMAT = 'YYYY-MM-DDTHH:mm:ssZ';
+const TS = '2026-08-07T10:30:00+08:00';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
-    return { ...DEFAULT_SETTINGS, taskFormat: 'dataview', ...overrides };
+    return { ...DEFAULT_SETTINGS, taskFormat: 'dataview', interceptTrigger: '', ...overrides };
 }
 
 describe('parseTaskLine', () => {
     it('parses a Dataview created field', () => {
-        const parsed = parseTaskLine(
-            '- [ ] task  [created:: 2026-08-07T10:30:00+08:00]',
-            ISO_FORMAT,
-        );
+        const parsed = parseTaskLine(`- [ ] task  [created:: ${TS}]`, ISO_FORMAT);
         expect(parsed?.description).toBe('task');
-        expect(parsed?.created?.value).toBe('2026-08-07T10:30:00+08:00');
+        expect(parsed?.created?.value).toBe(TS);
     });
 
     it('parses an emoji created field', () => {
-        const parsed = parseTaskLine('- [ ] task ➕ 2026-08-07T10:30:00+08:00', ISO_FORMAT);
-        expect(parsed?.created?.value).toBe('2026-08-07T10:30:00+08:00');
+        const parsed = parseTaskLine(`- [ ] task ➕ ${TS}`, ISO_FORMAT);
+        expect(parsed?.created?.value).toBe(TS);
     });
 
     it('parses multiple emoji completion fields without keeping them in the description', () => {
-        const line =
-            '- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00';
+        const line = `- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00`;
         const parsed = parseTaskLine(line, ISO_FORMAT);
         expect(parsed?.description).toBe('ff');
         expect(parsed?.created?.value).toBe('2026-08-07T06:55:32+08:00');
@@ -50,76 +47,158 @@ describe('parseTaskLine', () => {
 describe('toggleTaskLine', () => {
     it('adds a completion timestamp when completing a task', () => {
         expect(toggleTaskLine('- [ ] task', settings(), NOW)).toBe(
-            '- [x] task  [completion:: 2026-08-07T10:30:00+08:00]',
+            `- [x] task [completion:: ${TS}]`,
+        );
+    });
+
+    it('adds a created timestamp on any state click when enabled', () => {
+        expect(toggleTaskLine('- [ ] task', settings({ alwaysWriteCreated: true }), NOW)).toBe(
+            `- [x] task [created:: ${TS}] [completion:: ${TS}]`,
+        );
+        expect(
+            toggleTaskLine(
+                '- [ ] task',
+                settings({ transitionScope: 'all', alwaysWriteCreated: true }),
+                NOW,
+            ),
+        ).toBe(`- [/] task [created:: ${TS}] [in_progress:: ${TS}]`);
+    });
+
+    it('never overwrites an existing created timestamp when the switch is enabled', () => {
+        const line = `- [x] task  [created:: 2026-01-01T00:00:00+08:00]`;
+        expect(toggleTaskLine(line, settings({ alwaysWriteCreated: true }), NOW)).toBe(
+            `- [ ] task [created:: 2026-01-01T00:00:00+08:00]`,
         );
     });
 
     it('removes the completion timestamp when un-completing a task', () => {
-        const input =
-            '- [x] task  [completion:: 2026-08-07T10:30:00+08:00]  [created:: 2026-08-07T10:30:00+08:00]';
-        expect(toggleTaskLine(input, settings(), NOW)).toBe(
-            '- [ ] task  [created:: 2026-08-07T10:30:00+08:00]',
+        const input = `- [x] task  [completion:: ${TS}]  [created:: ${TS}]`;
+        expect(toggleTaskLine(input, settings(), NOW)).toBe(`- [ ] task [created:: ${TS}]`);
+    });
+
+    it('moves custom states to done when transitions are disabled', () => {
+        expect(toggleTaskLine('- [-] task', settings(), NOW)).toBe(
+            `- [x] task [completion:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [/] task', settings(), NOW)).toBe(
+            `- [x] task [completion:: ${TS}]`,
         );
     });
 
-    it('removes the cancelled timestamp when leaving cancelled status', () => {
-        const input = '- [-] task  [cancelled:: 2026-08-07T10:30:00+08:00]';
-        expect(toggleTaskLine(input, settings(), NOW)).toBe('- [ ] task');
-    });
-
-    it('adds a completion timestamp for in-progress tasks', () => {
-        expect(toggleTaskLine('- [/] task', settings(), NOW)).toBe(
-            '- [x] task  [completion:: 2026-08-07T10:30:00+08:00]',
+    it('moves unknown checkbox symbols to todo', () => {
+        expect(toggleTaskLine('- [o] task', settings(), NOW)).toBe(
+            `- [ ] task [created:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [o] task', settings({ transitionScope: 'all' }), NOW)).toBe(
+            `- [ ] task [created:: ${TS}]`,
         );
     });
 
     it('preserves unknown trailing fields', () => {
-        const input = '- [ ] task 📅 2026-01-01  [created:: 2026-08-07T10:30:00+08:00]';
+        const input = `- [ ] task 📅 2026-01-01  [created:: ${TS}]`;
         expect(toggleTaskLine(input, settings(), NOW)).toBe(
-            '- [x] task 📅 2026-01-01  [created:: 2026-08-07T10:30:00+08:00]  [completion:: 2026-08-07T10:30:00+08:00]',
+            `- [x] task 📅 2026-01-01 [created:: ${TS}] [completion:: ${TS}]`,
         );
     });
 
-    it('writes emoji fields when emoji format is selected', () => {
-        expect(toggleTaskLine('- [ ] task', settings({ taskFormat: 'emoji' }), NOW)).toBe(
-            '- [x] task ✅ 2026-08-07T10:30:00+08:00',
+    it('removes all legacy emoji completion fields when un-completing', () => {
+        const line = `- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00`;
+        expect(toggleTaskLine(line, settings(), NOW)).toBe(
+            '- [ ] ff [created:: 2026-08-07T06:55:32+08:00]',
         );
     });
 
-    it('removes all emoji completion fields when un-completing', () => {
-        const line =
-            '- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00';
-        expect(toggleTaskLine(line, settings({ taskFormat: 'emoji' }), NOW)).toBe(
-            '- [ ] ff ➕ 2026-08-07T06:55:32+08:00',
+    it('only writes timestamps when the interception trigger matches', () => {
+        const intercepted = settings({ interceptTrigger: '#custom', transitionScope: 'none' });
+        expect(toggleTaskLine('- [ ] task #custom', intercepted, NOW)).toBe(
+            `- [x] task #custom [completion:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [ ] task', intercepted, NOW)).toBe('- [x] task');
+    });
+
+    it('defaults transition scope to tagged tasks only', () => {
+        expect(toggleTaskLine('- [ ] task #custom', settings(), NOW)).toBe(
+            `- [/] task #custom [in_progress:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [ ] task', settings(), NOW)).toBe(
+            `- [x] task [completion:: ${TS}]`,
+        );
+    });
+
+    it('cycles through custom states when transitions are enabled for all tasks', () => {
+        const cyclic = settings({ transitionScope: 'all' });
+        expect(toggleTaskLine('- [ ] task', cyclic, NOW)).toBe(
+            `- [/] task [in_progress:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [/] task', cyclic, NOW)).toBe(
+            `- [-] task [cancelled:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [-] task', cyclic, NOW)).toBe(
+            `- [x] task [completion:: ${TS}]`,
+        );
+        expect(toggleTaskLine('- [x] task', cyclic, NOW)).toBe(
+            `- [ ] task [created:: ${TS}]`,
+        );
+    });
+
+    it('uses the done format template when it is customized', () => {
+        expect(toggleTaskLine('- [ ] task', settings({ doneFormat: '➕ {{time}}' }), NOW)).toBe(
+            `- [x] task ➕ ${TS}`,
+        );
+    });
+
+    it('writes the template literally when it has no time placeholder', () => {
+        expect(toggleTaskLine('- [ ] task', settings({ doneFormat: ' [state:: ]' }), NOW)).toBe(
+            '- [x] task [state:: ]',
         );
     });
 });
 
 describe('enrichToggledLine', () => {
     it('adds a completion timestamp when the native toggle completed the task', () => {
-        const line = '- [x] task  [created:: 2026-08-07T10:30:00+08:00]';
+        const line = `- [x] task  [created:: ${TS}]`;
         expect(enrichToggledLine(line, settings(), NOW)).toBe(
-            '- [x] task  [created:: 2026-08-07T10:30:00+08:00]  [completion:: 2026-08-07T10:30:00+08:00]',
+            `- [x] task [created:: ${TS}] [completion:: ${TS}]`,
+        );
+    });
+
+    it('adds a created timestamp to completed tasks when the switch is enabled', () => {
+        expect(enrichToggledLine('- [x] task', settings({ alwaysWriteCreated: true }), NOW)).toBe(
+            `- [x] task [created:: ${TS}] [completion:: ${TS}]`,
         );
     });
 
     it('removes a completion timestamp when the native toggle uncompleted the task', () => {
-        const line =
-            '- [ ] task  [completion:: 2026-08-07T10:30:00+08:00]  [created:: 2026-08-07T10:30:00+08:00]';
-        expect(enrichToggledLine(line, settings(), NOW)).toBe(
-            '- [ ] task  [created:: 2026-08-07T10:30:00+08:00]',
-        );
+        const line = `- [ ] task  [completion:: ${TS}]  [created:: ${TS}]`;
+        expect(enrichToggledLine(line, settings(), NOW)).toBe(`- [ ] task [created:: ${TS}]`);
     });
 
     it('removes a cancelled timestamp when the native toggle left cancelled status', () => {
-        const line = '- [ ] task  [cancelled:: 2026-08-07T10:30:00+08:00]';
-        expect(enrichToggledLine(line, settings(), NOW)).toBe('- [ ] task');
+        const line = `- [ ] task  [cancelled:: ${TS}]`;
+        expect(enrichToggledLine(line, settings(), NOW)).toBe(`- [ ] task [created:: ${TS}]`);
     });
 
-    it('does not add completion timestamps when the setting is disabled', () => {
-        expect(enrichToggledLine('- [x] task', settings({ setDoneDate: false }), NOW)).toBe(
-            '- [x] task',
+    it('does not enrich tasks that do not match the interception trigger', () => {
+        const intercepted = settings({ interceptTrigger: '#custom' });
+        expect(enrichToggledLine('- [x] task', intercepted, NOW)).toBe('- [x] task');
+    });
+
+    it('collapses duplicate completion fields', () => {
+        const line =
+            '- [x] #custom 任务二 [created:: 2026-08-07] [completion:: 2026-08-07] [completion:: 2026-08-07]';
+        expect(enrichToggledLine(line, settings(), NOW)).toBe(
+            '- [x] #custom 任务二 [created:: 2026-08-07] [completion:: 2026-08-07]',
         );
+    });
+
+    it('never accumulates duplicate completion fields over repeated toggles', () => {
+        const intercepted = settings({ interceptTrigger: '#custom' });
+        let line = '- [ ] #custom 任务二 [created:: 2026-08-07]';
+        for (let i = 0; i < 5; i++) {
+            line = toggleTaskLine(line, intercepted, NOW) ?? line;
+        }
+        const completionCount = line.split('completion::').length - 1;
+        expect(completionCount).toBeLessThanOrEqual(1);
     });
 });
 
@@ -133,12 +212,12 @@ describe('buildEditedLine', () => {
             settings: settings(),
             now: NOW,
         });
-        expect(result).toBe('- [ ] task edited  [created:: 2026-08-07T10:30:00+08:00]');
+        expect(result).toBe(`- [ ] task edited [created:: ${TS}]`);
     });
 
     it('never overwrites an existing created timestamp', () => {
         const parsed = parseTaskLine(
-            '- [ ] task  [created:: 2026-01-01T00:00:00+08:00]',
+            `- [ ] task  [created:: 2026-01-01T00:00:00+08:00]`,
             ISO_FORMAT,
         );
         const result = buildEditedLine(parsed!, {
@@ -147,7 +226,7 @@ describe('buildEditedLine', () => {
             settings: settings(),
             now: NOW,
         });
-        expect(result).toBe('- [ ] task  [created:: 2026-01-01T00:00:00+08:00]');
+        expect(result).toBe('- [ ] task [created:: 2026-01-01T00:00:00+08:00]');
     });
 
     it('adds and removes cancelled timestamps with the status', () => {
@@ -158,9 +237,7 @@ describe('buildEditedLine', () => {
             settings: settings(),
             now: NOW,
         });
-        expect(cancelled).toBe(
-            '- [-] task  [created:: 2026-08-07T10:30:00+08:00]  [cancelled:: 2026-08-07T10:30:00+08:00]',
-        );
+        expect(cancelled).toBe(`- [-] task [cancelled:: ${TS}]`);
 
         const parsedCancelled = parseTaskLine(cancelled, ISO_FORMAT);
         const reopened = buildEditedLine(parsedCancelled!, {
@@ -169,7 +246,7 @@ describe('buildEditedLine', () => {
             settings: settings(),
             now: NOW,
         });
-        expect(reopened).toBe('- [ ] task  [created:: 2026-08-07T10:30:00+08:00]');
+        expect(reopened).toBe(`- [ ] task [created:: ${TS}]`);
     });
 });
 
@@ -184,29 +261,36 @@ describe('custom time formats', () => {
         expect(formatTimestamp(custom, NOW)).toBe('2026/08/07 10:30');
     });
 
-    it('writes custom-format timestamps into created fields', () => {
-        const custom = settings({ timeFormat: 'custom', customTimeFormat: 'YYYY/MM/DD HH:mm' });
-        const parsed = parseTaskLine('- [ ] task', 'YYYY/MM/DD HH:mm');
+    it('writes created fields using the todo format template when it contains the time placeholder', () => {
+        const custom = settings({ todoFormat: 'created:: {{time}}' });
+        const parsed = parseTaskLine('- [ ] task', ISO_FORMAT);
         const result = buildEditedLine(parsed!, {
             description: 'task',
             statusSymbol: ' ',
             settings: custom,
             now: NOW,
         });
-        expect(result).toBe('- [ ] task  [created:: 2026/08/07 10:30]');
+        expect(result).toBe(`- [ ] task created:: ${TS}`);
     });
 });
 
 describe('createTaskLine', () => {
     it('creates a task with a created timestamp', () => {
         expect(createTaskLine('', 'buy milk', ' ', settings(), NOW)).toBe(
-            '- [ ] buy milk  [created:: 2026-08-07T10:30:00+08:00]',
+            `- [ ] buy milk [created:: ${TS}]`,
         );
     });
 
     it('preserves indentation and list marker from a list item', () => {
         expect(createTaskLine('  - old', 'new text', ' ', settings(), NOW)).toBe(
-            '  - [ ] new text  [created:: 2026-08-07T10:30:00+08:00]',
+            `  - [ ] new text [created:: ${TS}]`,
+        );
+    });
+
+    it('does not write timestamps when the interception trigger does not match', () => {
+        const intercepted = settings({ interceptTrigger: '#custom' });
+        expect(createTaskLine('- [ ] task', 'buy milk', ' ', intercepted, NOW)).toBe(
+            '- [ ] buy milk',
         );
     });
 });

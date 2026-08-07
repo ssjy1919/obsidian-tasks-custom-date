@@ -17,4 +17,12 @@ describe('i18n', () => {
     it('falls back to English for missing translations', () => {
         expect(i18n.t('modal.title', { lng: 'ru' })).toBe('Create or edit task');
     });
+
+    it('provides the time format preview and documentation link strings', () => {
+        expect(i18n.t('settings.timeFormat.preview', { time: '2026-08-08' })).toBe(
+            'Current time: 2026-08-08',
+        );
+        expect(i18n.t('settings.customTimeFormat.docs')).toContain('moment.js');
+        expect(i18n.t('settings.alwaysWriteCreated.name')).toBe('Always write created time');
+    });
 });

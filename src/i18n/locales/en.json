@@ -12,7 +12,34 @@
     "title": "Create or edit task",
     "description": "Description",
     "status": "Status",
-    "save": "Save"
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "modals": {
+    "customState": {
+      "title": "Edit custom state",
+      "symbol": {
+        "name": "Symbol"
+      },
+      "name": {
+        "name": "Name"
+      },
+      "format": {
+        "name": "Format template",
+        "desc": "Text written into the task. Use {{time}} to write the current time, e.g. cancelled:: {{time}}."
+      },
+      "autoWrite": {
+        "name": "Auto-write time"
+      },
+      "preview": {
+        "name": "Preview"
+      },
+      "errors": {
+        "symbolRequired": "Symbol is required.",
+        "symbolDuplicate": "This symbol is already used.",
+        "nameRequired": "Name is required."
+      }
+    }
   },
   "status": {
     "todo": "Todo",
@@ -28,6 +55,41 @@
       "name": "Task field format",
       "desc": "Choose how timestamps are written: Dataview inline fields or Tasks emoji fields."
     },
+    "intercept": {
+      "name": "Interception trigger tag/text",
+      "desc": "Only tasks containing this tag or text get timestamps written/removed and status transitions applied. Leave empty to handle all tasks."
+    },
+    "alwaysWriteCreated": {
+      "name": "Always write created time",
+      "desc": "When enabled, clicking a task in any state adds the created timestamp if it is missing. Existing timestamps are never overwritten."
+    },
+    "transitionScope": {
+      "name": "Transition scope",
+      "desc": "Choose which tasks cycle through the custom states when their checkbox is clicked.",
+      "none": "Disabled",
+      "all": "All tasks",
+      "tag": "Only tagged tasks"
+    },
+    "transitionTrigger": {
+      "name": "Transition trigger tag/text",
+      "desc": "Only tasks containing this tag or text cycle through custom states."
+    },
+    "states": {
+      "name": "Custom states",
+      "namePlaceholder": "State name",
+      "transition": "[{{previous}}]         ( ◔ ω◔) ⇨         [{{next}}]",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "edit": "Edit",
+      "delete": "Delete",
+      "add": "Add state",
+      "newState": "New State"
+    },
+    "fields": {
+      "name": "Field formats and auto-write",
+      "todoLabel": "Todo",
+      "doneLabel": "Done"
+    },
     "suggestTrigger": {
       "name": "Suggestion trigger character",
       "desc": "Show the created time suggestion after this character. Default is a space."
@@ -35,11 +97,13 @@
     "timeFormat": {
       "name": "Time format",
       "desc": "Choose the timestamp format used for created, completion and cancelled times.",
-      "custom": "Custom..."
+      "custom": "Custom...",
+      "preview": "Current time: {{time}}"
     },
     "customTimeFormat": {
       "name": "Custom time format",
-      "desc": "Enter a moment.js format string. If invalid, the ISO format is used."
+      "desc": "Enter a moment.js format string. If invalid, the ISO format is used.",
+      "docs": "moment.js format documentation"
     },
     "created": {
       "name": "Write created time",

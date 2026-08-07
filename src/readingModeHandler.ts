@@ -1,13 +1,13 @@
 import { MarkdownView, Plugin, TFile } from 'obsidian';
 import { getSettings, getTimeFormat } from './settings';
-import { enrichToggledLine, parseTaskLine } from './taskLine';
+import { parseTaskLine, toggleTaskLine } from './taskLine';
 
 export class ReadingModeHandler {
     private readonly plugin: Plugin;
 
     constructor(plugin: Plugin) {
         this.plugin = plugin;
-        this.plugin.registerDomEvent(document, 'click', (event) => this.handleClick(event));
+        this.plugin.registerDomEvent(document, 'click', (event) => this.handleClick(event), true);
     }
 
     private handleClick(event: MouseEvent): void {
@@ -37,12 +37,20 @@ export class ReadingModeHandler {
             return;
         }
 
-        void this.enrichAfterToggle(view.file, taskIndex);
+        event.preventDefault();
+        event.stopPropagation();
+        const originalChecked = target.checked;
+        target.disabled = true;
+        void this.toggleTask(view.file, taskIndex, target, originalChecked);
     }
 
-    private async enrichAfterToggle(file: TFile, taskIndex: number): Promise<void> {
+    private async toggleTask(
+        file: TFile,
+        taskIndex: number,
+        checkbox: HTMLInputElement,
+        originalChecked: boolean,
+    ): Promise<void> {
         for (let attempt = 0; attempt < 5; attempt++) {
-            await new Promise((resolve) => setTimeout(resolve, 120));
             try {
                 const data = await this.plugin.app.vault.read(file);
                 const lines = data.split('\n');
@@ -64,11 +72,13 @@ export class ReadingModeHandler {
                 }
 
                 if (lineNumber === undefined || current === undefined) {
+                    await new Promise((resolve) => setTimeout(resolve, 120));
                     continue;
                 }
 
-                const enriched = enrichToggledLine(current, getSettings());
-                if (enriched === current) {
+                const toggled = toggleTaskLine(current, getSettings());
+                if (toggled === null || toggled === current) {
+                    await new Promise((resolve) => setTimeout(resolve, 120));
                     continue;
                 }
 
@@ -77,14 +87,29 @@ export class ReadingModeHandler {
                     if (linesToEdit[lineNumber!] !== current) {
                         return dataToEdit;
                     }
-                    linesToEdit[lineNumber!] = enriched;
+                    linesToEdit[lineNumber!] = toggled;
                     return linesToEdit.join('\n');
                 });
+
+                this.syncCheckbox(checkbox, toggled);
                 return;
             } catch (error) {
-                console.error('Tasks custom date: failed to enrich reading-mode toggle', error);
-                return;
+                console.error('Tasks custom date: failed to toggle task in reading mode', error);
+                break;
             }
         }
+        checkbox.disabled = false;
+        checkbox.checked = originalChecked;
+    }
+
+    private syncCheckbox(checkbox: HTMLInputElement, toggledLine: string): void {
+        const match = toggledLine.match(/\[(.)\]/u);
+        const checked = match !== null && match[1] !== ' ';
+        setTimeout(() => {
+            if (checkbox.isConnected) {
+                checkbox.checked = checked;
+                checkbox.disabled = false;
+            }
+        }, 100);
     }
 }

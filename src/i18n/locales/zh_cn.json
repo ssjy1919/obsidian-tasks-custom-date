@@ -12,7 +12,34 @@
     "title": "创建或编辑任务",
     "description": "任务描述",
     "status": "状态",
-    "save": "保存"
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "modals": {
+    "customState": {
+      "title": "编辑自定义状态",
+      "symbol": {
+        "name": "图标字符"
+      },
+      "name": {
+        "name": "状态名称"
+      },
+      "format": {
+        "name": "格式模板",
+        "desc": "写入任务中的文本。使用 {{time}} 写入当前时间，例如 cancelled:: {{time}}。"
+      },
+      "autoWrite": {
+        "name": "自动写入时间"
+      },
+      "preview": {
+        "name": "预览"
+      },
+      "errors": {
+        "symbolRequired": "图标字符不能为空。",
+        "symbolDuplicate": "该图标字符已被使用。",
+        "nameRequired": "状态名称不能为空。"
+      }
+    }
   },
   "status": {
     "todo": "待办",
@@ -28,6 +55,41 @@
       "name": "任务字段格式",
       "desc": "选择时间戳的写入样式：Dataview 内联字段或 Tasks 表情符号字段。"
     },
+    "intercept": {
+      "name": "接管触发标签/文字",
+      "desc": "仅包含该标签/文字的任务会由插件自动写入/删除时间字段并按状态流转；留空则所有任务都由插件接管。"
+    },
+    "alwaysWriteCreated": {
+      "name": "始终写入添加时间",
+      "desc": "开启后，点击任意状态的任务时，如果缺少添加时间会自动补写；已有时间不会被覆盖。"
+    },
+    "transitionScope": {
+      "name": "流转范围",
+      "desc": "选择点击勾选框时哪些任务参与自定义状态循环流转。",
+      "none": "不启用流转",
+      "all": "所有任务都流转",
+      "tag": "仅指定标签/文字的任务流转"
+    },
+    "transitionTrigger": {
+      "name": "流转触发标签/文字",
+      "desc": "仅内容包含该标签或文字的任务按状态序列循环流转。"
+    },
+    "states": {
+      "name": "自定义中间状态",
+      "namePlaceholder": "状态名称",
+      "transition": "[{{previous}}]         ( ◔ ω◔) ⇨         [{{next}}]",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "edit": "编辑",
+      "delete": "删除",
+      "add": "新增状态",
+      "newState": "新状态"
+    },
+    "fields": {
+      "name": "字段格式与自动写入",
+      "todoLabel": "未完成",
+      "doneLabel": "已完成"
+    },
     "suggestTrigger": {
       "name": "建议触发字符",
       "desc": "输入该字符后显示创建时间建议，默认为空格。"
@@ -35,11 +97,13 @@
     "timeFormat": {
       "name": "时间格式",
       "desc": "选择添加时间、完成时间和取消时间使用的时间格式。",
-      "custom": "自定义..."
+      "custom": "自定义...",
+      "preview": "当前时间：{{time}}"
     },
     "customTimeFormat": {
       "name": "自定义时间格式",
-      "desc": "输入 moment.js 格式字符串；无效时回退到 ISO 格式。"
+      "desc": "输入 moment.js 格式字符串；无效时回退到 ISO 格式。",
+      "docs": "moment.js 格式化说明"
     },
     "created": {
       "name": "写入添加时间",

@@ -2,6 +2,7 @@ import { App, Editor, Modal, Setting } from 'obsidian';
 import { i18n } from './i18n/i18n';
 import { getSettings, getTimeFormat } from './settings';
 import { buildEditedLine, createTaskLine, parseTaskLine, stripListPrefix } from './taskLine';
+import { DONE_STATE, TODO_STATE, getStateSequence } from './stateEngine';
 
 export class CreateOrEditTaskModal extends Modal {
     private readonly editor: Editor;
@@ -36,15 +37,19 @@ export class CreateOrEditTaskModal extends Modal {
         new Setting(contentEl)
             .setName(i18n.t('modal.status'))
             .addDropdown((dropdown) => {
-                dropdown
-                    .addOption(' ', i18n.t('status.todo'))
-                    .addOption('/', i18n.t('status.inProgress'))
-                    .addOption('x', i18n.t('status.done'))
-                    .addOption('-', i18n.t('status.cancelled'))
-                    .setValue(this.statusSymbol)
-                    .onChange((value) => {
-                        this.statusSymbol = value;
-                    });
+                const settings = getSettings();
+                for (const state of getStateSequence(settings)) {
+                    const label =
+                        state.id === TODO_STATE.id
+                            ? i18n.t('status.todo')
+                            : state.id === DONE_STATE.id
+                              ? i18n.t('status.done')
+                              : state.name;
+                    dropdown.addOption(state.symbol, `${label} [${state.symbol}]`);
+                }
+                dropdown.setValue(this.statusSymbol).onChange((value) => {
+                    this.statusSymbol = value;
+                });
             });
 
         new Setting(contentEl).addButton((button) =>
