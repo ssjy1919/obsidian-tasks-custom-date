@@ -181,6 +181,7 @@ export class TasksCustomDateSettingTab extends PluginSettingTab {
                             if (modal.saved) {
                                 if (isBase) {
                                     await this.updateStateField(state.id, {
+                                        name: modal.state.name,
                                         format: modal.state.format,
                                         autoWrite: modal.state.autoWrite,
                                     });
