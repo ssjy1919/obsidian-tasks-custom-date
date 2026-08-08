@@ -77,7 +77,7 @@
     "states": {
       "name": "Custom states",
       "namePlaceholder": "State name",
-      "transition": "   ( ◔ ω◔) ⇨   [{{next}}] {{nextName}}",
+      "transition": "\u00A0\u00A0\u00A0( ◔ ω◔) ⇨\u00A0\u00A0\u00A0[{{next}}] {{nextName}}",
       "moveUp": "Move up",
       "moveDown": "Move down",
       "edit": "Edit",

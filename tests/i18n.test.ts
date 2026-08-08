@@ -26,6 +26,6 @@ describe('i18n', () => {
         expect(i18n.t('settings.alwaysWriteCreated.name')).toBe('Always write created time');
         expect(
             i18n.t('settings.states.transition', { next: 'x', nextName: 'Done' }),
-        ).toBe('   ( ◔ ω◔) ⇨   [x] Done');
+        ).toBe('\u00A0\u00A0\u00A0( ◔ ω◔) ⇨\u00A0\u00A0\u00A0[x] Done');
     });
 });
