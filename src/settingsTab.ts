@@ -124,15 +124,20 @@ export class TasksCustomDateSettingTab extends PluginSettingTab {
             }
             const label = state.name;
             const setting = new Setting(containerEl);
-            setting.setName(`[${state.symbol}] ${label}`);
             const transition = statusTransitionSymbolsForSettings(state.symbol, settings);
+            const nextState = getStateSequence(settings).find(
+                (candidate) => candidate.symbol === transition.next,
+            );
             const transitionEl = document.createElement('span');
             transitionEl.className = 'tasks-state-transition';
             transitionEl.textContent = i18n.t('settings.states.transition', {
-                current: transition.current,
                 next: transition.next,
+                nextName: nextState?.name ?? TODO_STATE.name,
             });
-            setting.setDesc(transitionEl);
+            const nameFragment = document.createDocumentFragment();
+            nameFragment.append(`[${state.symbol}] ${label} `, transitionEl);
+            setting.setName(nameFragment);
+            setting.nameEl.addClass('tasks-state-name');
 
             if (!isBase) {
                 const index = settings.customStates.findIndex((s) => s.id === state.id);

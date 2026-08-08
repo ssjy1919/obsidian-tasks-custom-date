@@ -24,5 +24,8 @@ describe('i18n', () => {
         );
         expect(i18n.t('settings.customTimeFormat.docs')).toContain('moment.js');
         expect(i18n.t('settings.alwaysWriteCreated.name')).toBe('Always write created time');
+        expect(
+            i18n.t('settings.states.transition', { next: 'x', nextName: 'Done' }),
+        ).toBe('( ◔ ω◔) ⇨         [x] Done');
     });
 });
