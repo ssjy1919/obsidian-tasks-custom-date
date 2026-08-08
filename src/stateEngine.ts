@@ -19,9 +19,19 @@ export const DONE_STATE: TaskStateConfig = {
 
 export function getStateSequence(settings: Settings): TaskStateConfig[] {
     return [
-        { ...TODO_STATE, format: settings.todoFormat, autoWrite: settings.todoAutoWrite },
+        {
+            ...TODO_STATE,
+            name: settings.todoName,
+            format: settings.todoFormat,
+            autoWrite: settings.todoAutoWrite,
+        },
         ...settings.customStates,
-        { ...DONE_STATE, format: settings.doneFormat, autoWrite: settings.doneAutoWrite },
+        {
+            ...DONE_STATE,
+            name: settings.doneName,
+            format: settings.doneFormat,
+            autoWrite: settings.doneAutoWrite,
+        },
     ];
 }
 
@@ -69,21 +79,21 @@ export function nextStatusSymbol(
 export function statusTransitionSymbolsForSettings(
     currentSymbol: string,
     settings: Settings,
-): { previous: string; next: string } {
+): { current: string; next: string } {
     const sequence = getStateSequence(settings);
     const index = sequence.findIndex((state) => state.symbol === currentSymbol);
     if (index === -1) {
-        return { previous: TODO_STATE.symbol, next: TODO_STATE.symbol };
+        return { current: TODO_STATE.symbol, next: TODO_STATE.symbol };
     }
     if (settings.transitionScope !== 'none') {
         return {
-            previous: sequence[(index - 1 + sequence.length) % sequence.length].symbol,
+            current: sequence[index].symbol,
             next: sequence[(index + 1) % sequence.length].symbol,
         };
     }
     const next = nextStatusSymbol(currentSymbol, '- [ ] task', settings) ?? TODO_STATE.symbol;
     return {
-        previous: currentSymbol === TODO_STATE.symbol ? DONE_STATE.symbol : TODO_STATE.symbol,
+        current: currentSymbol,
         next,
     };
 }

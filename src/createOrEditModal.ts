@@ -2,7 +2,7 @@ import { App, Editor, Modal, Setting } from 'obsidian';
 import { i18n } from './i18n/i18n';
 import { getSettings, getTimeFormat } from './settings';
 import { buildEditedLine, createTaskLine, parseTaskLine, stripListPrefix } from './taskLine';
-import { DONE_STATE, TODO_STATE, getStateSequence } from './stateEngine';
+import { getStateSequence } from './stateEngine';
 
 export class CreateOrEditTaskModal extends Modal {
     private readonly editor: Editor;
@@ -39,13 +39,7 @@ export class CreateOrEditTaskModal extends Modal {
             .addDropdown((dropdown) => {
                 const settings = getSettings();
                 for (const state of getStateSequence(settings)) {
-                    const label =
-                        state.id === TODO_STATE.id
-                            ? i18n.t('status.todo')
-                            : state.id === DONE_STATE.id
-                              ? i18n.t('status.done')
-                              : state.name;
-                    dropdown.addOption(state.symbol, `${label} [${state.symbol}]`);
+                    dropdown.addOption(state.symbol, `${state.name} [${state.symbol}]`);
                 }
                 dropdown.setValue(this.statusSymbol).onChange((value) => {
                     this.statusSymbol = value;

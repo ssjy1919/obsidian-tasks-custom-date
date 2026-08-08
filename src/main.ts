@@ -82,7 +82,14 @@ export default class TasksCustomDatePlugin extends Plugin {
 
     public async loadSettings(): Promise<void> {
         const data = await this.loadData();
-        updateSettings({ ...DEFAULT_SETTINGS, ...(data ?? {}) });
+        const merged = { ...DEFAULT_SETTINGS, ...(data ?? {}) };
+        if (data?.todoName === undefined) {
+            merged.todoName = i18n.t('settings.fields.todoLabel');
+        }
+        if (data?.doneName === undefined) {
+            merged.doneName = i18n.t('settings.fields.doneLabel');
+        }
+        updateSettings(merged);
     }
 
     public async saveSettings(): Promise<void> {

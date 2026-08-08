@@ -122,19 +122,14 @@ export class TasksCustomDateSettingTab extends PluginSettingTab {
             if (!isBase && !includeCustom) {
                 continue;
             }
-            const label =
-                state.id === TODO_STATE.id
-                    ? i18n.t('settings.fields.todoLabel')
-                    : state.id === DONE_STATE.id
-                      ? i18n.t('settings.fields.doneLabel')
-                      : state.name;
+            const label = state.name;
             const setting = new Setting(containerEl);
             setting.setName(`[${state.symbol}] ${label}`);
             const transition = statusTransitionSymbolsForSettings(state.symbol, settings);
             const transitionEl = document.createElement('span');
             transitionEl.className = 'tasks-state-transition';
             transitionEl.textContent = i18n.t('settings.states.transition', {
-                previous: transition.previous,
+                current: transition.current,
                 next: transition.next,
             });
             setting.setDesc(transitionEl);
@@ -324,11 +319,13 @@ export class TasksCustomDateSettingTab extends PluginSettingTab {
         const settings = getSettings();
         if (id === TODO_STATE.id) {
             updateSettings({
+                todoName: patch.name ?? settings.todoName,
                 todoFormat: patch.format ?? settings.todoFormat,
                 todoAutoWrite: patch.autoWrite ?? settings.todoAutoWrite,
             });
         } else if (id === DONE_STATE.id) {
             updateSettings({
+                doneName: patch.name ?? settings.doneName,
                 doneFormat: patch.format ?? settings.doneFormat,
                 doneAutoWrite: patch.autoWrite ?? settings.doneAutoWrite,
             });

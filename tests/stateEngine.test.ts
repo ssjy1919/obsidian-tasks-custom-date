@@ -26,6 +26,13 @@ describe('stateEngine', () => {
         expect(sequence.map((state) => state.symbol)).toEqual([' ', '/', '-', 'x']);
     });
 
+    it('uses configured names for the base states', () => {
+        const configured = settings({ todoName: '未完成', doneName: '已完成' });
+        const sequence = getStateSequence(configured);
+        expect(sequence[0].name).toBe('未完成');
+        expect(sequence[sequence.length - 1].name).toBe('已完成');
+    });
+
     it('finds a state by symbol', () => {
         expect(getStateBySymbol(settings(), '-')?.id).toBe('cancelled');
         expect(getStateBySymbol(settings(), 'x')?.id).toBe('done');
@@ -75,44 +82,44 @@ describe('stateEngine', () => {
         expect(nextStatusSymbol('o', '- [o] task', settings({ transitionScope: 'all' }))).toBe(' ');
     });
 
-    it('describes the previous and next status according to the transition settings', () => {
+    it('describes the current and next status according to the transition settings', () => {
         const plain = settings({ transitionScope: 'none' });
         expect(statusTransitionSymbolsForSettings(' ', plain)).toEqual({
-            previous: 'x',
+            current: ' ',
             next: 'x',
         });
         expect(statusTransitionSymbolsForSettings('x', plain)).toEqual({
-            previous: ' ',
+            current: 'x',
             next: ' ',
         });
 
         const all = settings({ transitionScope: 'all' });
         expect(statusTransitionSymbolsForSettings(' ', all)).toEqual({
-            previous: 'x',
+            current: ' ',
             next: '/',
         });
         expect(statusTransitionSymbolsForSettings('/', all)).toEqual({
-            previous: ' ',
+            current: '/',
             next: '-',
         });
         expect(statusTransitionSymbolsForSettings('-', all)).toEqual({
-            previous: '/',
+            current: '-',
             next: 'x',
         });
         expect(statusTransitionSymbolsForSettings('x', all)).toEqual({
-            previous: '-',
+            current: 'x',
             next: ' ',
         });
 
         const tagged = settings({ transitionTrigger: '#custom' });
         expect(statusTransitionSymbolsForSettings(' ', tagged)).toEqual({
-            previous: 'x',
+            current: ' ',
             next: '/',
         });
 
         const taggedEmpty = settings({ transitionScope: 'tag', transitionTrigger: '' });
         expect(statusTransitionSymbolsForSettings(' ', taggedEmpty)).toEqual({
-            previous: 'x',
+            current: ' ',
             next: '/',
         });
     });

@@ -21,6 +21,8 @@ export interface Settings {
     transitionScope: TransitionScope;
     transitionTrigger: string;
     customStates: TaskStateConfig[];
+    todoName: string;
+    doneName: string;
     todoFormat: string;
     todoAutoWrite: boolean;
     doneFormat: string;
@@ -61,6 +63,8 @@ export const DEFAULT_SETTINGS: Settings = {
             autoWrite: true,
         },
     ],
+    todoName: 'Todo',
+    doneName: 'Done',
     todoFormat: ' [created:: {{time}}]',
     todoAutoWrite: true,
     doneFormat: ' [completion:: {{time}}]',

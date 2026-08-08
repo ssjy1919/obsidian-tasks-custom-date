@@ -56,9 +56,6 @@ export class CustomStateModal extends Modal {
                 text.setValue(this.state.name).onChange((value) => {
                     this.state.name = value;
                 });
-                if (this.isBase) {
-                    text.inputEl.disabled = true;
-                }
             });
 
         new Setting(contentEl)
@@ -118,10 +115,7 @@ export class CustomStateModal extends Modal {
     }
 
     private validate(): string[] {
-        if (this.isBase) {
-            return [];
-        }
-        const errors = this.validateSymbol(this.state.symbol);
+        const errors = this.isBase ? [] : this.validateSymbol(this.state.symbol);
         if (this.state.name.trim().length === 0) {
             errors.push(i18n.t('modals.customState.errors.nameRequired'));
         }

@@ -77,7 +77,7 @@
     "states": {
       "name": "自定义中间状态",
       "namePlaceholder": "状态名称",
-      "transition": "[{{previous}}]         ( ◔ ω◔) ⇨         [{{next}}]",
+      "transition": "[{{current}}]         ( ◔ ω◔) ⇨         [{{next}}]",
       "moveUp": "上移",
       "moveDown": "下移",
       "edit": "编辑",

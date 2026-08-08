@@ -11,7 +11,7 @@
 }
 
 .tasks-state-transition {
-  white-space: pre;
+  white-space: nowrap;
 }
 
 .tasks-time-format-preview {
