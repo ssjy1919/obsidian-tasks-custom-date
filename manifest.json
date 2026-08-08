@@ -1,7 +1,7 @@
 {
-  "id": "obsidian-tasks-custom-date-plugin",
+  "id": "tasks-custom-date",
   "name": "Tasks custom date",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "minAppVersion": "1.4.0",
   "description": "Automatically write created, completion and cancelled timestamps, with custom state transitions and format templates.",
   "author": "ssjy1919",

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-tasks-custom-date",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Automatically write created, completion and cancelled timestamps, with custom state transitions and format templates.",
   "main": "main.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "jest --ci --runInBand",
     "reload": "obsidian reload",
     "restart": "obsidian restart",
-    "plugin:reload": "obsidian plugin:reload id=obsidian-tasks-custom-date-plugin"
+    "plugin:reload": "obsidian plugin:reload id=tasks-custom-date"
   },
   "license": "MIT",
   "dependencies": {

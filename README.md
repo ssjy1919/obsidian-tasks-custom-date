@@ -50,7 +50,7 @@
 ## 安装
 
 1. 下载最新 Release 中的 `main.js`、`manifest.json`、`styles.css` 三个文件。
-2. 放入库的 `.obsidian/plugins/obsidian-tasks-custom-date-plugin/` 目录。
+2. 放入库的 `.obsidian/plugins/tasks-custom-date/` 目录。
 3. 在 Obsidian 设置 → 第三方插件中启用 “Tasks custom date”。
 
 ## 开发
