@@ -207,18 +207,7 @@ export function formatTimestamp(settings: Settings, now: Moment = nowMoment()): 
     return now.format(getTimeFormat(settings));
 }
 
-function effectiveFieldFormat(parsed: ParsedTaskLine, settings: Settings): 'dataview' | 'emoji' {
-    return parsed.fieldFormat ?? settings.taskFormat;
-}
 
-function buildLine(
-    parsed: ParsedTaskLine,
-    statusSymbol: string,
-    description: string,
-    fieldTexts: string[],
-): string {
-    return `${parsed.indentation}${parsed.listMarker} [${statusSymbol}] ${description}${fieldTexts.join('')}`;
-}
 
 export function normalizeTaskLine(
     line: string,

@@ -6,7 +6,6 @@ import {
     getTimeFormat,
     getSettings,
     updateSettings,
-    type Settings,
     type TaskStateConfig,
     type TimeFormatPreset,
     type TransitionScope,
