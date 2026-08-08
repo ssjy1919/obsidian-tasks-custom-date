@@ -1,5 +1,29 @@
 # Tasks custom date
 
+Automatically write created, completion and cancelled timestamps when tasks change state. Supports custom state transitions, configurable field templates, a unified time format, creation-time suggestions, and multiple languages.
+
+## Features
+
+- Only intercept tasks containing the configured trigger tag or text, or all tasks when left empty.
+- Cycle through Todo, Done, and any custom intermediate states when a task checkbox is clicked.
+- Write each state's configured template, replacing `{{time}}` with the current time.
+- Keep existing timestamps untouched unless a template is explicitly written.
+
+## Installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest GitHub release.
+2. Place them in `.obsidian/plugins/tasks-custom-date/`.
+3. Enable **Tasks custom date** in the Obsidian community plugins settings.
+
+## Development
+
+```bash
+npm install
+npm test
+npm run build
+npm run plugin:reload
+```
+
 一个精简的 Obsidian 插件：在任务进入不同状态时自动写入时间字段，并支持自定义中间状态流转、格式模板、统一时间格式和多语言。
 
 ## 功能
