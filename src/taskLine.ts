@@ -99,7 +99,7 @@ export function parseTaskLine(line: string, timeFormat?: string): ParsedTaskLine
     const listMarker = match[2];
     const statusSymbol = match[3];
     let work = match[4].trim();
-    const effectiveTimeFormat = timeFormat ?? 'YYYY-MM-DDTHH:mm:ssZ';
+    const effectiveTimeFormat = timeFormat ?? 'YYYY-MM-DDTHH:mm:ss';
 
     let created: TimestampField | undefined;
     let done: TimestampField | undefined;

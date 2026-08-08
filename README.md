@@ -28,15 +28,15 @@ Automatically write created, completion and cancelled timestamps when tasks chan
 
 - Each state has a format template; `{{time}}` is replaced with the current time when the task enters that state.
 - Templates without `{{time}}` are written literally and do not append a timestamp.
-- All time fields share the "Time format" setting: `YYYY-MM-DDTHH:mm:ssZ`, `YYYY-MM-DD HH:mm`, `YYYY-MM-DD`, or a custom moment.js format.
+- All time fields share the "Time format" setting: `YYYY-MM-DDTHH:mm:ss`, `YYYY-MM-DD HH:mm`, `YYYY-MM-DD`, or a custom moment.js format.
 - A live preview is shown below the custom format input, with the [moment.js formatting guide](https://momentjs.com/docs/#/displaying/).
 - "Always write created time": when enabled, a missing created time is written whenever a task in any state is clicked; existing created time is never overwritten.
 
 Examples:
 
-- ` [created:: {{time}}]` → ` [created:: 2026-08-08T04:15:04+08:00]`
-- ` [completion:: {{time}}]` → ` [completion:: 2026-08-08T04:15:04+08:00]`
-- ` [cancelled:: {{time}}]` → ` [cancelled:: 2026-08-08T04:15:04+08:00]`
+- ` [created:: {{time}}]` → ` [created:: 2026-08-08T04:15:04]`
+- ` [completion:: {{time}}]` → ` [completion:: 2026-08-08T04:15:04]`
+- ` [cancelled:: {{time}}]` → ` [cancelled:: 2026-08-08T04:15:04]`
 
 ### Created time suggestions
 

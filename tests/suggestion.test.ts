@@ -26,8 +26,8 @@ describe('buildCreatedDateSuggestions', () => {
         expect(suggestions[0]).toMatchObject({
             replaceFrom: line.length,
             replaceTo: line.length,
-            appendText: '[created:: 2026-08-07T10:30:00+08:00]',
-            displayText: 'Created time: 2026-08-07T10:30:00+08:00',
+            appendText: '[created:: 2026-08-07T10:30:00]',
+            displayText: 'Created time: 2026-08-07T10:30:00',
         });
         expect(suggestions[1].kind).toBe('empty');
     });
@@ -43,7 +43,7 @@ describe('buildCreatedDateSuggestions', () => {
         );
         expect(suggestions).toHaveLength(2);
         expect(suggestions[0].kind).toBe('created');
-        expect(suggestions[0].appendText).toBe(' [created:: 2026-08-07T10:30:00+08:00]');
+        expect(suggestions[0].appendText).toBe(' [created:: 2026-08-07T10:30:00]');
     });
 
     it('does not trigger on the word "created"', () => {
@@ -59,7 +59,7 @@ describe('buildCreatedDateSuggestions', () => {
     });
 
     it('returns empty when the task already has a created field', () => {
-        const line = '- [ ] task  [created:: 2026-08-07T10:30:00+08:00]';
+        const line = '- [ ] task  [created:: 2026-08-07T10:30:00]';
         expect(buildCreatedDateSuggestions(line, line.length, settings(), 'Created time', '⏎')).toEqual([]);
     });
 

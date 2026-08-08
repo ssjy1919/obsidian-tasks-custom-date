@@ -32,7 +32,7 @@ export interface Settings {
 }
 
 export const TIME_FORMAT_PRESETS: Record<Exclude<TimeFormatPreset, 'custom'>, string> = {
-    iso: 'YYYY-MM-DDTHH:mm:ssZ',
+    iso: 'YYYY-MM-DDTHH:mm:ss',
     dateTimeSpace: 'YYYY-MM-DD HH:mm',
     dateOnly: 'YYYY-MM-DD',
 };

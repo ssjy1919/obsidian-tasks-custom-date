@@ -12,8 +12,8 @@ import { DEFAULT_SETTINGS, type Settings } from '../src/settings';
 (window as any).moment = moment;
 
 const NOW = moment('2026-08-07T10:30:00+08:00');
-const ISO_FORMAT = 'YYYY-MM-DDTHH:mm:ssZ';
-const TS = '2026-08-07T10:30:00+08:00';
+const ISO_FORMAT = 'YYYY-MM-DDTHH:mm:ss';
+const TS = '2026-08-07T10:30:00';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
     return { ...DEFAULT_SETTINGS, taskFormat: 'dataview', interceptTrigger: '', ...overrides };
@@ -32,11 +32,11 @@ describe('parseTaskLine', () => {
     });
 
     it('parses multiple emoji completion fields without keeping them in the description', () => {
-        const line = `- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00`;
+        const line = `- [x] ff ➕ 2026-08-07T06:55:32 ✅ 2026-08-07T06:55:49 ✅ 2026-08-07T06:55:51`;
         const parsed = parseTaskLine(line, ISO_FORMAT);
         expect(parsed?.description).toBe('ff');
-        expect(parsed?.created?.value).toBe('2026-08-07T06:55:32+08:00');
-        expect(parsed?.done?.value).toBe('2026-08-07T06:55:51+08:00');
+        expect(parsed?.created?.value).toBe('2026-08-07T06:55:32');
+        expect(parsed?.done?.value).toBe('2026-08-07T06:55:51');
     });
 
     it('returns null for a non-task line', () => {
@@ -65,9 +65,9 @@ describe('toggleTaskLine', () => {
     });
 
     it('never overwrites an existing created timestamp when the switch is enabled', () => {
-        const line = `- [x] task  [created:: 2026-01-01T00:00:00+08:00]`;
+        const line = `- [x] task  [created:: 2026-01-01T00:00:00]`;
         expect(toggleTaskLine(line, settings({ alwaysWriteCreated: true }), NOW)).toBe(
-            `- [ ] task [created:: 2026-01-01T00:00:00+08:00]`,
+            `- [ ] task [created:: 2026-01-01T00:00:00]`,
         );
     });
 
@@ -102,9 +102,9 @@ describe('toggleTaskLine', () => {
     });
 
     it('removes all legacy emoji completion fields when un-completing', () => {
-        const line = `- [x] ff ➕ 2026-08-07T06:55:32+08:00 ✅ 2026-08-07T06:55:49+08:00 ✅ 2026-08-07T06:55:51+08:00`;
+        const line = `- [x] ff ➕ 2026-08-07T06:55:32 ✅ 2026-08-07T06:55:49 ✅ 2026-08-07T06:55:51`;
         expect(toggleTaskLine(line, settings(), NOW)).toBe(
-            '- [ ] ff [created:: 2026-08-07T06:55:32+08:00]',
+            '- [ ] ff [created:: 2026-08-07T06:55:32]',
         );
     });
 
@@ -217,7 +217,7 @@ describe('buildEditedLine', () => {
 
     it('never overwrites an existing created timestamp', () => {
         const parsed = parseTaskLine(
-            `- [ ] task  [created:: 2026-01-01T00:00:00+08:00]`,
+            `- [ ] task  [created:: 2026-01-01T00:00:00]`,
             ISO_FORMAT,
         );
         const result = buildEditedLine(parsed!, {
@@ -226,7 +226,7 @@ describe('buildEditedLine', () => {
             settings: settings(),
             now: NOW,
         });
-        expect(result).toBe('- [ ] task [created:: 2026-01-01T00:00:00+08:00]');
+        expect(result).toBe('- [ ] task [created:: 2026-01-01T00:00:00]');
     });
 
     it('adds and removes cancelled timestamps with the status', () => {

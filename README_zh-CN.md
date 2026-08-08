@@ -28,15 +28,15 @@
 
 - 每个状态对应一个格式模板；模板中的 `{{time}}` 是时间占位符，进入该状态时会替换为当前时间。
 - 模板里不包含 `{{time}}` 时，会严格按照模板文本写入，不会自动附加时间。
-- 所有时间字段共用“时间格式”设置：`YYYY-MM-DDTHH:mm:ssZ`、`YYYY-MM-DD HH:mm`、`YYYY-MM-DD` 或自定义 moment.js 格式。
+- 所有时间字段共用“时间格式”设置：`YYYY-MM-DDTHH:mm:ss`、`YYYY-MM-DD HH:mm`、`YYYY-MM-DD` 或自定义 moment.js 格式。
 - 自定义格式输入框下方会实时显示当前预设的实际时间，并提供 [moment.js 格式化说明](https://momentjs.com/docs/#/displaying/) 链接。
 - “始终写入添加时间”开关：开启后，点击任意状态的任务时，如果缺少添加时间会自动补写；已有添加时间不会被覆盖。
 
 示例：
 
-- ` [created:: {{time}}]` → ` [created:: 2026-08-08T04:15:04+08:00]`
-- ` [completion:: {{time}}]` → ` [completion:: 2026-08-08T04:15:04+08:00]`
-- ` [cancelled:: {{time}}]` → ` [cancelled:: 2026-08-08T04:15:04+08:00]`
+- ` [created:: {{time}}]` → ` [created:: 2026-08-08T04:15:04]`
+- ` [completion:: {{time}}]` → ` [completion:: 2026-08-08T04:15:04]`
+- ` [cancelled:: {{time}}]` → ` [cancelled:: 2026-08-08T04:15:04]`
 
 ### 创建时间建议
 

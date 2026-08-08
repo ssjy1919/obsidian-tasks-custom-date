@@ -138,7 +138,7 @@ describe('stateEngine', () => {
             'completion:: YYYY-MM-DDTHH:mm:ssZ',
         );
         expect(formatFieldNow(' [completion:: {{time}}]', now, settings())).toBe(
-            ' [completion:: 2026-08-07T10:30:00+08:00]',
+            ' [completion:: 2026-08-07T10:30:00]',
         );
         expect(formatFieldNow(' [state:: ]', now, settings())).toBe(
             ' [state:: ]',
