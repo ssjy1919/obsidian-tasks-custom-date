@@ -42,6 +42,44 @@ describe('parseTaskLine', () => {
     it('returns null for a non-task line', () => {
         expect(parseTaskLine('plain text', ISO_FORMAT)).toBeNull();
     });
+
+    it('parses a Dataview created field followed by trailing text', () => {
+        const parsed = parseTaskLine(`- [ ] task  [created:: ${TS}] #note`, ISO_FORMAT);
+        expect(parsed?.description).toBe('task #note');
+        expect(parsed?.created?.value).toBe(TS);
+    });
+
+    it('parses a Dataview completion field followed by trailing text', () => {
+        const parsed = parseTaskLine(`- [x] task [completion:: ${TS}] some note`, ISO_FORMAT);
+        expect(parsed?.description).toBe('task some note');
+        expect(parsed?.done?.value).toBe(TS);
+    });
+
+    it('parses an emoji created field followed by trailing text', () => {
+        const parsed = parseTaskLine(`- [ ] task ➕ ${TS} #note`, ISO_FORMAT);
+        expect(parsed?.description).toBe('task #note');
+        expect(parsed?.created?.value).toBe(TS);
+    });
+
+    it('parses an emoji field with a space-separated timestamp followed by trailing text', () => {
+        const parsed = parseTaskLine('- [ ] task ➕ 2026-08-07 10:30 #note', 'YYYY-MM-DD HH:mm');
+        expect(parsed?.description).toBe('task #note');
+        expect(parsed?.created?.value).toBe('2026-08-07 10:30');
+    });
+
+    it('parses an emoji field with a variation selector followed by trailing text', () => {
+        const parsed = parseTaskLine(`- [ ] task ➕️ ${TS} note`, ISO_FORMAT);
+        expect(parsed?.description).toBe('task note');
+        expect(parsed?.created?.value).toBe(TS);
+    });
+
+    it('parses consecutive emoji fields followed by trailing text', () => {
+        const line = '- [x] ff ➕ 2026-08-07T06:55:32 ✅ 2026-08-07T06:55:51 reviewed';
+        const parsed = parseTaskLine(line, ISO_FORMAT);
+        expect(parsed?.description).toBe('ff reviewed');
+        expect(parsed?.created?.value).toBe('2026-08-07T06:55:32');
+        expect(parsed?.done?.value).toBe('2026-08-07T06:55:51');
+    });
 });
 
 describe('toggleTaskLine', () => {
@@ -147,6 +185,27 @@ describe('toggleTaskLine', () => {
         );
     });
 
+    it('does not duplicate a created timestamp that sits mid-line before trailing text', () => {
+        const input = `- [ ] task [created:: 2026-08-07] #note`;
+        expect(toggleTaskLine(input, settings(), NOW)).toBe(
+            `- [x] task #note [created:: 2026-08-07] [completion:: ${TS}]`,
+        );
+    });
+
+    it('does not duplicate a completion timestamp that sits mid-line before trailing text', () => {
+        const input = `- [x] task [completion:: ${TS}] #note`;
+        expect(toggleTaskLine(input, settings(), NOW)).toBe(
+            `- [ ] task #note [created:: ${TS}]`,
+        );
+    });
+
+    it('does not duplicate a custom emoji created field that sits mid-line before trailing text', () => {
+        const input = '- [ ] task ⏳ 2026-08-07 #note';
+        expect(toggleTaskLine(input, settings({ todoFormat: '⏳ {{time}}' }), NOW)).toBe(
+            `- [x] task #note ⏳ 2026-08-07 [completion:: ${TS}]`,
+        );
+    });
+
     it('writes the template literally when it has no time placeholder', () => {
         expect(toggleTaskLine('- [ ] task', settings({ doneFormat: ' [state:: ]' }), NOW)).toBe(
             '- [x] task [state:: ]',
@@ -191,6 +250,13 @@ describe('enrichToggledLine', () => {
         );
     });
 
+    it('does not duplicate a mid-line completion field with trailing text when enriching', () => {
+        const line = `- [x] #custom task [completion:: ${TS}] #note`;
+        expect(enrichToggledLine(line, settings(), NOW)).toBe(
+            `- [x] #custom task #note [completion:: ${TS}]`,
+        );
+    });
+
     it('never accumulates duplicate completion fields over repeated toggles', () => {
         const intercepted = settings({ interceptTrigger: '#custom' });
         let line = '- [ ] #custom 任务二 [created:: 2026-08-07]';
@@ -227,6 +293,20 @@ describe('buildEditedLine', () => {
             now: NOW,
         });
         expect(result).toBe('- [ ] task [created:: 2026-01-01T00:00:00]');
+    });
+
+    it('keeps a mid-line created timestamp with trailing text when editing', () => {
+        const parsed = parseTaskLine(
+            `- [ ] task  [created:: 2026-01-01T00:00:00] #note`,
+            ISO_FORMAT,
+        );
+        const result = buildEditedLine(parsed!, {
+            description: 'task #note',
+            statusSymbol: ' ',
+            settings: settings(),
+            now: NOW,
+        });
+        expect(result).toBe('- [ ] task #note [created:: 2026-01-01T00:00:00]');
     });
 
     it('adds and removes cancelled timestamps with the status', () => {

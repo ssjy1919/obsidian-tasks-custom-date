@@ -1,3 +1,4 @@
+import type { Extension } from '@codemirror/state';
 import { EditorView, ViewPlugin, type PluginValue } from '@codemirror/view';
 import { getSettings, getTimeFormat } from './settings';
 import { enrichToggledLine, parseTaskLine, toggleTaskLine } from './taskLine';
@@ -98,5 +99,5 @@ class LivePreviewExtension implements PluginValue {
     }
 }
 
-export const newLivePreviewExtension = (): ReturnType<typeof ViewPlugin.fromClass> =>
-    ViewPlugin.fromClass(LivePreviewExtension);
+export const newLivePreviewExtension = (): Extension =>
+    ViewPlugin.fromClass<LivePreviewExtension, undefined>(LivePreviewExtension);

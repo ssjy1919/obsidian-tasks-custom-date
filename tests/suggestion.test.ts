@@ -63,6 +63,16 @@ describe('buildCreatedDateSuggestions', () => {
         expect(buildCreatedDateSuggestions(line, line.length, settings(), 'Created time', '⏎')).toEqual([]);
     });
 
+    it('returns empty when the created field sits mid-line before trailing text', () => {
+        const line = '- [ ] task [created:: 2026-08-07] #note ';
+        expect(buildCreatedDateSuggestions(line, line.length, settings(), 'Created time', '⏎')).toEqual([]);
+    });
+
+    it('returns empty when an emoji created field sits mid-line before trailing text', () => {
+        const line = '- [ ] task ➕ 2026-08-07 #note ';
+        expect(buildCreatedDateSuggestions(line, line.length, settings(), 'Created time', '⏎')).toEqual([]);
+    });
+
     it('returns empty for non-task lines and cursor positions before the description', () => {
         expect(buildCreatedDateSuggestions('plain ', 6, settings(), 'Created time', '⏎')).toEqual([]);
         expect(buildCreatedDateSuggestions('- [ ] ', 3, settings(), 'Created time', '⏎')).toEqual([]);

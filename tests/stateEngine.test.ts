@@ -153,4 +153,13 @@ describe('stateEngine', () => {
         expect(removed.raw).toBe('[created:: 2026-08-07]');
         expect(removed.body).toBe('task');
     });
+
+    it('removes a field that is followed by trailing text, preserving the text', () => {
+        const removed = removeFieldFromBody(
+            'task [created:: 2026-08-07] #note',
+            ' [created:: {{time}}]',
+        );
+        expect(removed.raw).toBe('[created:: 2026-08-07]');
+        expect(removed.body).toBe('task #note');
+    });
 });

@@ -211,7 +211,7 @@ export function fieldRemovalRegex(template: string): RegExp {
               ? genericValue
               : '';
     return new RegExp(
-        `\\s*${escapeRegExp(prefix)}${value ? `\\s*${value}` : ''}${escapeRegExp(suffix)} *,?\\s*$`,
+        `\\s*${escapeRegExp(prefix)}${value ? `\\s*${value}` : ''}${escapeRegExp(suffix)}`,
         'u',
     );
 }
@@ -226,5 +226,5 @@ export function removeFieldFromBody(
         return { body, raw: null };
     }
     const raw = match[0].trim();
-    return { body: body.slice(0, match.index ?? 0).trim(), raw };
+    return { body: body.replace(regex, '').trim(), raw };
 }

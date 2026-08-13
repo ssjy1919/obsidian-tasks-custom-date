@@ -61,7 +61,7 @@ function isTimestampLike(value: string, timeFormat: string): boolean {
 function matchLastEmojiField(
     work: string,
     timeFormat: string,
-): { start: number; symbol: string; value: string } | null {
+): { start: number; end: number; symbol: string; value: string } | null {
     let best: { index: number; symbol: string } | null = null;
     for (const symbol of ['❌', '✅', '➕']) {
         const index = work.lastIndexOf(symbol);
@@ -77,16 +77,24 @@ function matchLastEmojiField(
     if (work[valueStart] === '\uFE0F') {
         valueStart++;
     }
-    const value = work.slice(valueStart).trim();
-    if (!isTimestampLike(value, timeFormat)) {
-        return null;
+
+    // Take the longest prefix of the remainder that looks like a timestamp, so
+    // trailing text (comments, tags, other fields) stays in the description.
+    let value = work.slice(valueStart).trim();
+    while (!isTimestampLike(value, timeFormat)) {
+        const cut = value.search(/\s\S*$/u);
+        if (cut === -1) {
+            return null;
+        }
+        value = value.slice(0, cut).trim();
     }
 
     let start = best.index;
     while (start > 0 && /\s/.test(work[start - 1])) {
         start--;
     }
-    return { start, symbol: best.symbol, value };
+    const end = work.indexOf(value, valueStart) + value.length;
+    return { start, end, symbol: best.symbol, value };
 }
 
 export function parseTaskLine(line: string, timeFormat?: string): ParsedTaskLine | null {
@@ -116,7 +124,7 @@ export function parseTaskLine(line: string, timeFormat?: string): ParsedTaskLine
         let matched = false;
 
         for (const field of dataviewFields) {
-            const bracketRegex = new RegExp(`\\s*\\[${field.fieldName}:: *([^\\]]*)\\] *,?$`, 'u');
+            const bracketRegex = new RegExp(`\\s*\\[${field.fieldName}:: *([^\\]]*)\\]`, 'u');
             const bracketMatch = work.match(bracketRegex);
             if (bracketMatch !== null) {
                 if (fieldFormat === null) {
@@ -134,7 +142,7 @@ export function parseTaskLine(line: string, timeFormat?: string): ParsedTaskLine
                 continue;
             }
 
-            const parenRegex = new RegExp(`\\s*\\(${field.fieldName}:: *([^)]*)\\) *,?$`, 'u');
+            const parenRegex = new RegExp(`\\s*\\(${field.fieldName}:: *([^)]*)\\)`, 'u');
             const parenMatch = work.match(parenRegex);
             if (parenMatch !== null) {
                 if (fieldFormat === null) {
@@ -164,7 +172,7 @@ export function parseTaskLine(line: string, timeFormat?: string): ParsedTaskLine
             } else {
                 cancelled ??= { value: emojiField.value };
             }
-            work = work.slice(0, emojiField.start).trim();
+            work = (work.slice(0, emojiField.start) + work.slice(emojiField.end)).trim();
             matched = true;
         }
 
